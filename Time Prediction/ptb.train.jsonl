@@ -1,0 +1,90 @@
+import torch
+from datasets import load_dataset
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, Trainer, TrainingArguments, DataCollatorForLanguageModeling
+
+# =============================
+# Step 1: Load PTB dataset
+# =============================
+# Upload your file in Colab using left-side file browser or this:
+from google.colab import files
+uploaded = files.upload()
+
+# Example: "ptb.train.txt"
+dataset = load_dataset("text", data_files={"train": "ptb.train.txt"})
+
+# =============================
+# Step 2: Tokenizer & Model
+# =============================
+model_name = "gpt2"   # small model for Colab
+tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+
+# GPT-2 doesn’t have a pad token → set eos as pad
+tokenizer.pad_token = tokenizer.eos_token
+
+model = GPT2LMHeadModel.from_pretrained(model_name)
+
+# =============================
+# Step 3: Tokenize dataset
+# =============================
+def tokenize_function(examples):
+    return tokenizer(examples["text"], truncation=True, padding="max_length", max_length=128)
+
+tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=["text"])
+
+# =============================
+# Step 4: Data Collator
+# =============================
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer,
+    mlm=False  # no masked LM → we want autoregressive
+)
+
+# =============================
+# Step 5: Training
+# =============================
+training_args = TrainingArguments(
+    output_dir="./gpt2-ptb",
+    overwrite_output_dir=True,
+    per_device_train_batch_size=4,
+    num_train_epochs=1,   # try 1 first in Colab, increase later
+    save_steps=500,
+    save_total_limit=2,
+    logging_dir="./logs",
+    logging_steps=100,
+    report_to="none", # Disable wandb logging
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_dataset["train"],
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+)
+
+trainer.train()
+
+# =============================
+# Step 6: Save model
+# =============================
+trainer.save_model("./gpt2-ptb")
+tokenizer.save_pretrained("./gpt2-ptb")
+
+# =============================
+# Step 7: Test Auto-Completion
+# =============================
+def complete_text(prompt, max_new_tokens=30):
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=max_new_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        do_sample=True,
+        top_k=50,
+        top_p=0.95
+    )
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+# 🔹 Example test
+print(complete_text("The economy is expected to"))
+print(complete_text("The company announced that"))
