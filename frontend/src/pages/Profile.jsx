@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  MapPin,
-  UserPen,
-  Settings2,
-  Link2,
-  PlusCircle,
-  LogOut,
-} from "lucide-react";
+import { MapPin, UserPen, Settings2, Link2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useProfileStore } from "../stores/profile.store";
-import { useAuthStore } from "../stores/auth.store";
+import { useUser, useClerk } from "@clerk/clerk-react";
 
+/* ---------------- Animations ---------------- */
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
@@ -20,26 +13,19 @@ const fadeUp = (delay = 0) => ({
 
 const Profile = () => {
   const navigate = useNavigate();
-  const {
-    user,
-    socials,
-    isLoading,
-    getProfile,
-    updateProfile,
-    updateSocials,
-    deleteSocial,
-    error,
-  } = useProfileStore();
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
 
-  const { logout } = useAuthStore();
-
+  /* ---------------- Local UI State ---------------- */
   const [editMode, setEditMode] = useState(false);
   const [showSocialForm, setShowSocialForm] = useState(false);
+
   const [localProfile, setLocalProfile] = useState({
     bio: "",
     location: "",
     website: "",
   });
+
   const [localSocials, setLocalSocials] = useState({
     linkedin: "",
     instagram: "",
@@ -47,185 +33,187 @@ const Profile = () => {
     twitter: "",
   });
 
+  /* ---------------- Load from Clerk Metadata ---------------- */
   useEffect(() => {
-    getProfile();
-  }, [getProfile]);
-
-  useEffect(() => {
-    if (user) {
-      setLocalProfile({
-        bio: user.bio || "",
-        location: user.location || "",
-        website: user.website || "",
-      });
-      setLocalSocials(user.socials || {});
-    }
+    if (!user) return;
+    const { profile = {}, socials = {} } = user.unsafeMetadata || {};
+    setLocalProfile({
+      bio: profile.bio || "",
+      location: profile.location || "",
+      website: profile.website || "",
+    });
+    setLocalSocials({
+      linkedin: socials.linkedin || "",
+      instagram: socials.instagram || "",
+      facebook: socials.facebook || "",
+      twitter: socials.twitter || "",
+    });
   }, [user]);
 
+  /* ---------------- Save Profile ---------------- */
   const handleProfileSave = async () => {
-    const success = await updateProfile(localProfile);
-    if (success) setEditMode(false);
+    await user.update({
+      unsafeMetadata: {
+        ...user.unsafeMetadata,
+        profile: localProfile,
+      },
+    });
+    setEditMode(false);
   };
 
+  /* ---------------- Save Socials ---------------- */
   const handleSocialSave = async () => {
-    const success = await updateSocials(localSocials);
-    if (success) setShowSocialForm(false);
+    // Validate URLs (optional)
+    for (const [key, url] of Object.entries(localSocials)) {
+      if (url && !/^https?:\/\//i.test(url)) {
+        alert(
+          `${key.charAt(0).toUpperCase() + key.slice(1)} URL must start with http:// or https://`,
+        );
+        return;
+      }
+    }
+
+    await user.update({
+      unsafeMetadata: {
+        ...user.unsafeMetadata,
+        socials: localSocials,
+      },
+    });
+    setShowSocialForm(false);
   };
 
-  const handleDeleteSocial = async (platform) => {
-    await deleteSocial(platform);
-  };
-
-  const handleLogout = () => {
-    logout();
+  /* ---------------- Logout ---------------- */
+  const handleLogout = async () => {
+    await signOut();
     navigate("/login");
   };
 
-  if (isLoading && !user) {
+  /* ---------------- Loading State ---------------- */
+  if (!isLoaded) {
     return (
-      <div className='flex items-center justify-center h-screen text-[#01497C]'>
+      <div className="flex items-center justify-center h-screen text-[#01497C] dark:text-[#61A5C2]">
         Loading profile...
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className='flex items-center justify-center h-screen text-red-600 font-medium'>
-        {error}
-      </div>
-    );
-  }
-
+  /* ================= UI ================= */
   return (
-    <section className='min-h-screen bg-[#F8FAFC] py-16 px-6 relative'>
-      <div className='max-w-7xl mx-auto space-y-16'>
-        {/* === HEADER === */}
-        <motion.div
-          {...fadeUp(0)}
-          className='flex flex-col md:flex-row justify-between items-center gap-6 relative'>
-          <div className='text-center md:text-left'>
-            <h1 className='text-4xl md:text-5xl font-bold text-[#012A4A]'>
-              {user?.username ? `Welcome, ${user.username}` : "Welcome!"}
-            </h1>
-            <p className='text-[#013A63]/80 text-base md:text-lg mt-3'>
-              Manage your profile and connected social accounts.
-            </p>
-          </div>
+    <section className="min-h-screen bg-[#F8FAFC] dark:bg-gray-900 py-16 px-6 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto space-y-16">
+        {/* HEADER */}
+        <motion.div {...fadeUp(0)}>
+          <h1 className="text-4xl font-bold text-[#012A4A] dark:text-white">
+            Welcome, {user.username || user.firstName || "User"}
+          </h1>
+          <p className="text-[#013A63]/80 dark:text-[#CBE5F5]/80 mt-2">
+            Manage your profile and connected social accounts.
+          </p>
         </motion.div>
 
-        {/* === PROFILE CARD === */}
+        {/* PROFILE CARD */}
         <motion.div
           {...fadeUp(0.2)}
-          className='relative bg-white border border-[#E2E8F0] rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex flex-col md:flex-row items-center gap-8'>
-          {/* ✅ Hide logout when in edit mode */}
+          className="relative bg-white dark:bg-gray-800 border border-[#E2E8F0] dark:border-gray-700 rounded-2xl p-8 flex flex-col md:flex-row gap-8 transition-colors duration-300"
+        >
           {!editMode && (
             <button
               onClick={handleLogout}
-              title='Logout'
-              className='absolute top-4 right-4 p-2 border border-[#E2E8F0] rounded-full hover:bg-[#F1F5F9] transition'>
-              <LogOut className='w-5 h-5 text-[#E63946]' />
+              className="absolute top-4 right-4 p-2 border rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              aria-label="Logout"
+            >
+              <LogOut className="w-5 h-5 text-[#E63946]" />
             </button>
           )}
 
           <img
-            src={
-              user?.profilePic ||
-              `https://avatar.iran.liara.run/username?username=${encodeURIComponent(
-                user?.username || "User"
-              )}`
-            }
-            alt='Profile'
-            className='w-32 h-32 rounded-full border-4 border-[#61A5C2] object-cover shadow'
+            src={user.imageUrl || "/default-avatar.png"}
+            alt="Profile"
+            className="w-32 h-32 rounded-full border-4 border-[#61A5C2]"
           />
 
-          <div className='flex-1 text-center md:text-left w-full'>
+          <div className="flex-1">
             {!editMode ? (
               <>
-                <h2 className='text-2xl font-semibold text-[#012A4A]'>
-                  {user?.username}
+                <h2 className="text-2xl font-semibold text-[#012A4A] dark:text-white">
+                  {user.username}
                 </h2>
-                <p className='text-[#2A6F97] font-medium'>{user?.email}</p>
+                <p className="text-[#2A6F97] dark:text-[#A9D6E5]">
+                  {user.primaryEmailAddress?.emailAddress}
+                </p>
 
-                <div className='mt-4 space-y-2'>
-                  <p className='text-[#6C757D]'>
-                    {user?.bio || "No bio added yet."}
-                  </p>
-                  <p className='text-[#01497C] flex items-center justify-center md:justify-start gap-1'>
-                    <MapPin className='w-4 h-4' />
-                    {user?.location || "Location not set"}
-                  </p>
-                  {user?.website && (
-                    <a
-                      href={user.website}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-[#2A6F97] hover:underline block'>
-                      🌐 {user.website}
-                    </a>
-                  )}
-                </div>
+                <p className="mt-4 text-[#6C757D] dark:text-gray-300">
+                  {localProfile.bio || "No bio added yet."}
+                </p>
 
-                <div className='mt-6 flex justify-center md:justify-end'>
-                  {/* ✏️ Edit Button */}
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className='flex items-center gap-2 text-[#01497C] border border-[#01497C] px-4 py-1.5 rounded-lg hover:bg-[#01497C] hover:text-white transition-all'>
-                    <UserPen className='w-4 h-4' />
-                    Edit Profile
-                  </button>
-                </div>
+                <p className="mt-2 flex items-center gap-1 text-[#01497C] dark:text-[#61A5C2]">
+                  <MapPin className="w-4 h-4" />
+                  {localProfile.location || "Location not set"}
+                </p>
+
+                {localProfile.website && (
+                  <a
+                    href={localProfile.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block mt-1 text-[#2A6F97] dark:text-[#A9D6E5] hover:underline"
+                  >
+                    🌐 {localProfile.website}
+                  </a>
+                )}
+
+                <button
+                  onClick={() => setEditMode(true)}
+                  className="mt-6 flex items-center gap-2 border border-[#01497C] dark:border-[#61A5C2] px-4 py-2 rounded-lg text-[#01497C] dark:text-[#61A5C2] hover:bg-[#01497C] dark:hover:bg-[#61A5C2] hover:text-white transition"
+                >
+                  <UserPen className="w-4 h-4" />
+                  Edit Profile
+                </button>
               </>
             ) : (
               <>
-                <h3 className='text-xl font-semibold mb-4 text-[#012A4A]'>
-                  Edit Profile
-                </h3>
-                <div className='flex flex-col gap-3'>
-                  <input
-                    type='text'
-                    placeholder='Bio'
-                    value={localProfile.bio}
-                    onChange={(e) =>
-                      setLocalProfile({ ...localProfile, bio: e.target.value })
-                    }
-                    className='border border-gray-300 rounded-lg px-4 py-2 focus:ring-[#01497C] focus:border-[#01497C]'
-                  />
-                  <input
-                    type='text'
-                    placeholder='Location'
-                    value={localProfile.location}
-                    onChange={(e) =>
-                      setLocalProfile({
-                        ...localProfile,
-                        location: e.target.value,
-                      })
-                    }
-                    className='border border-gray-300 rounded-lg px-4 py-2 focus:ring-[#01497C] focus:border-[#01497C]'
-                  />
-                  <input
-                    type='text'
-                    placeholder='Website'
-                    value={localProfile.website}
-                    onChange={(e) =>
-                      setLocalProfile({
-                        ...localProfile,
-                        website: e.target.value,
-                      })
-                    }
-                    className='border border-gray-300 rounded-lg px-4 py-2 focus:ring-[#01497C] focus:border-[#01497C]'
-                  />
-                </div>
+                <input
+                  value={localProfile.bio}
+                  onChange={(e) =>
+                    setLocalProfile({ ...localProfile, bio: e.target.value })
+                  }
+                  placeholder="Bio"
+                  className="w-full border dark:border-gray-600 dark:bg-gray-700 rounded px-4 py-2 mb-2 text-[#013A63] dark:text-[#CBE5F5] transition-colors duration-300"
+                />
+                <input
+                  value={localProfile.location}
+                  onChange={(e) =>
+                    setLocalProfile({
+                      ...localProfile,
+                      location: e.target.value,
+                    })
+                  }
+                  placeholder="Location"
+                  className="w-full border dark:border-gray-600 dark:bg-gray-700 rounded px-4 py-2 mb-2 text-[#013A63] dark:text-[#CBE5F5] transition-colors duration-300"
+                />
+                <input
+                  value={localProfile.website}
+                  onChange={(e) =>
+                    setLocalProfile({
+                      ...localProfile,
+                      website: e.target.value,
+                    })
+                  }
+                  placeholder="Website"
+                  className="w-full border dark:border-gray-600 dark:bg-gray-700 rounded px-4 py-2 text-[#013A63] dark:text-[#CBE5F5] transition-colors duration-300"
+                />
 
-                <div className='flex gap-3 mt-4 justify-end'>
+                <div className="flex gap-3 mt-4">
                   <button
                     onClick={handleProfileSave}
-                    className='bg-[#01497C] text-white px-4 py-2 rounded-lg hover:bg-[#014F86]'>
+                    className="bg-[#01497C] text-white px-4 py-2 rounded"
+                  >
                     Save
                   </button>
                   <button
                     onClick={() => setEditMode(false)}
-                    className='border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100'>
+                    className="border px-4 py-2 rounded dark:border-gray-500 dark:text-white"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -234,90 +222,70 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        {/* === SOCIALS SECTION === */}
+        {/* SOCIALS */}
         <motion.div
           {...fadeUp(0.3)}
-          className='bg-white border border-[#E2E8F0] rounded-2xl shadow-sm hover:shadow-md transition-all p-8'>
-          <div className='flex items-center justify-between mb-6'>
-            <div className='flex items-center gap-3'>
-              <Link2 className='text-[#01497C] w-6 h-6' />
-              <h3 className='text-xl font-semibold text-[#012A4A]'>
-                Connected Social Accounts
-              </h3>
-            </div>
+          className="bg-white dark:bg-gray-800 border border-[#E2E8F0] dark:border-gray-700 rounded-2xl p-8 transition-colors duration-300"
+        >
+          <div className="flex justify-between mb-6">
+            <h3 className="text-xl font-semibold text-[#012A4A] dark:text-white flex items-center gap-2">
+              <Link2 className="w-5 h-5" />
+              Connected Social Accounts
+            </h3>
 
             <button
-              onClick={() => setShowSocialForm(true)}
-              className='flex items-center gap-2 border border-[#01497C] text-[#01497C] px-4 py-1.5 rounded-lg hover:bg-[#01497C] hover:text-white transition-all'>
-              <Settings2 className='w-4 h-4' />
+              onClick={() => setShowSocialForm(!showSocialForm)}
+              className="flex items-center gap-2 border px-4 py-2 rounded dark:border-gray-500 dark:text-white transition"
+            >
+              <Settings2 className="w-4 h-4" />
               Manage
             </button>
           </div>
 
-          <div className='grid sm:grid-cols-2 md:grid-cols-4 gap-6'>
-            {Object.entries(socials || {}).map(([platform, link]) => (
-              <div
-                key={platform}
-                className={`p-4 rounded-lg border text-center ${
-                  link
-                    ? "border-[#2ECC71] text-[#2ECC71] bg-[#2ECC71]/5"
-                    : "border-[#E2E8F0] text-[#6C757D]"
-                }`}>
-                <span className='font-medium capitalize'>
-                  {platform}:{" "}
-                  {link ? (
-                    <a
-                      href={link}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='underline hover:text-[#27AE60]'>
-                      Connected
-                    </a>
-                  ) : (
-                    "Not Connected"
-                  )}
-                </span>
-                {link && (
-                  <button
-                    onClick={() => handleDeleteSocial(platform)}
-                    className='ml-2 text-sm text-[#E63946] hover:underline'>
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {showSocialForm && (
-            <div className='mt-6 space-y-3'>
+          {showSocialForm ? (
+            <>
               {Object.keys(localSocials).map((platform) => (
                 <input
                   key={platform}
-                  type='url'
-                  placeholder={`${platform} URL`}
-                  value={localSocials[platform] || ""}
+                  value={localSocials[platform]}
                   onChange={(e) =>
                     setLocalSocials({
                       ...localSocials,
                       [platform]: e.target.value,
                     })
                   }
-                  className='w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-[#01497C] focus:border-[#01497C]'
+                  placeholder={`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`}
+                  className="w-full border dark:border-gray-600 dark:bg-gray-700 rounded px-4 py-2 mb-2 text-[#013A63] dark:text-[#CBE5F5] transition-colors duration-300"
                 />
               ))}
 
-              <div className='flex justify-end gap-3'>
-                <button
-                  onClick={handleSocialSave}
-                  className='bg-[#01497C] text-white px-4 py-2 rounded-lg hover:bg-[#014F86]'>
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowSocialForm(false)}
-                  className='border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100'>
-                  Cancel
-                </button>
-              </div>
+              <button
+                onClick={handleSocialSave}
+                className="bg-[#01497C] text-white px-4 py-2 rounded mt-2"
+              >
+                Save Socials
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {Object.entries(localSocials).map(([platform, url]) =>
+                url ? (
+                  <a
+                    key={platform}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#2A6F97] dark:text-[#A9D6E5] hover:underline"
+                  >
+                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                  </a>
+                ) : null,
+              )}
+              {!Object.values(localSocials).some(Boolean) && (
+                <p className="text-[#6C757D] dark:text-gray-300">
+                  No socials connected.
+                </p>
+              )}
             </div>
           )}
         </motion.div>

@@ -12,16 +12,6 @@ export const teamData = {
 
   teamMembers: [
     {
-      name: "Dhruv Kanti Solanki",
-      role: "",
-      email: "d.solanki@somaiya.edu",
-      phone: "+91 98332 81953",
-      linkedin: "",
-      github: "",
-      profileImage: "./placeholder-user.jpg",
-      description: "ABC",
-    },
-    {
       name: "Aryan Jay Shah",
       role: "",
       email: "",
@@ -30,6 +20,16 @@ export const teamData = {
       github: "",
       profileImage: "./placeholder-user.jpg",
       description: "ABC",
+    },
+    {
+      name: "Dhruv Kanti Solanki",
+      role: "MERN Stack Developer",
+      email: "d.solanki@somaiya.edu",
+      phone: "+91 98332 81953",
+      linkedin: "https://www.linkedin.com/in/dhruv-solanki-699679313/",
+      github: "https://github.com/DhruvSolanki01259",
+      profileImage: "./Team-Photos/dhruv-nobg.png",
+      description: "Handled Frontend and Backend of the Application.",
     },
     {
       name: "Ayush Mukesh Togadiya",

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
+
 import Layout from "./components/Layout";
 import SplashScreen from "./components/SplashScreen";
 
@@ -12,21 +14,10 @@ import Analytics from "./pages/Analytics";
 import SignUp from "./pages/SignUp";
 import LogIn from "./pages/LogIn";
 import NotFound from "./pages/NotFound";
-import { useAuthStore } from "./stores/auth.store";
 import ContentStudio from "./pages/ContentStudio";
-
-// Protected route wrapper
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-  if (isLoading) return <div className="text-center mt-20">Loading...</div>;
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-};
-
-// Public route wrapper (redirect to /profile if already logged in)
-const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <Navigate to="/profile" replace /> : children;
-};
+import SsoCallback from "./components/SsoCallback";
+import { PublicRoute } from "./routes/PublicRoute";
+import { ProtectedRoute } from "./routes/ProtectedRoute";
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(false);
@@ -55,13 +46,14 @@ const App = () => {
           key="app"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, ease: "easeInOut" }}
+          transition={{ duration: 1 }}
         >
           <Layout>
             <Routes>
-              {/* Public Routes */}
+              {/* Public */}
               <Route path="/" element={<Home />} />
               <Route path="/about-us" element={<About />} />
+
               <Route
                 path="/login"
                 element={
@@ -70,6 +62,7 @@ const App = () => {
                   </PublicRoute>
                 }
               />
+
               <Route
                 path="/signup"
                 element={
@@ -79,7 +72,9 @@ const App = () => {
                 }
               />
 
-              {/* Protected Routes */}
+              <Route path="/sso-callback" element={<SsoCallback />} />
+
+              {/* Protected */}
               <Route
                 path="/profile"
                 element={
@@ -88,6 +83,7 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/contact"
                 element={
@@ -96,6 +92,7 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/analytics"
                 element={
@@ -104,6 +101,7 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/content-studio"
                 element={
@@ -113,7 +111,7 @@ const App = () => {
                 }
               />
 
-              {/* Catch-all 404 */}
+              {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

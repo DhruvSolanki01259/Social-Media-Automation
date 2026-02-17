@@ -29,7 +29,7 @@ const Layout = ({ children }) => {
   const showLayout = isLayoutRoute && !isExcludedRoute;
 
   return (
-    <div className='flex flex-col min-h-screen bg-[#F8FAFC] text-[#012A4A] transition-all duration-300'>
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
       {/* Show Header only for allowed routes */}
       {showLayout && <Header />}
 
@@ -37,7 +37,8 @@ const Layout = ({ children }) => {
       <main
         className={`flex-grow ${
           showLayout ? "pt-20 px-4 md:px-8 lg:px-16" : ""
-        }`}>
+        }`}
+      >
         {children}
       </main>
 

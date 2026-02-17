@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
+import ThemeWrapper from "./components/ThemeWrapper.jsx";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -15,7 +16,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-        <App />
+        <ThemeWrapper>
+          <App />
+        </ThemeWrapper>
       </ClerkProvider>
     </BrowserRouter>
   </StrictMode>,

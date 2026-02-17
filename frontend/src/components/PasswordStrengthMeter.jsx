@@ -1,6 +1,6 @@
 import { Check, X } from "lucide-react";
 
-const PasswordCriteria = ({ password }) => {
+const PasswordCriteria = ({ password, darkMode }) => {
   const criteria = [
     { label: "At least 6 characters", met: password.length >= 6 },
     { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
@@ -10,22 +10,25 @@ const PasswordCriteria = ({ password }) => {
   ];
 
   return (
-    <div className='mt-3 space-y-1'>
+    <div className="mt-3 space-y-1">
       {criteria.map((item) => (
-        <div
-          key={item.label}
-          className='flex items-center text-xs'>
+        <div key={item.label} className="flex items-center text-xs">
           {item.met ? (
-            <Check className='w-4 h-4 text-[#2ECC71] mr-2' />
+            <Check className="w-4 h-4 text-[#2ECC71] mr-2" />
           ) : (
-            <X className='w-4 h-4 text-[#E63946] mr-2' />
+            <X className="w-4 h-4 text-[#E63946] mr-2" />
           )}
           <span
             className={`transition-all duration-200 ${
               item.met
-                ? "text-[#012A4A] font-semibold" // darker & bolder when met
-                : "text-[#6C757D]" // muted when unmet
-            }`}>
+                ? darkMode
+                  ? "text-[#E0F2FF] font-semibold" // light in dark mode
+                  : "text-[#012A4A] font-semibold"
+                : darkMode
+                  ? "text-[#89A0B2]" // muted dark
+                  : "text-[#6C757D]"
+            }`}
+          >
             {item.label}
           </span>
         </div>
@@ -34,7 +37,7 @@ const PasswordCriteria = ({ password }) => {
   );
 };
 
-const PasswordStrengthMeter = ({ password }) => {
+const PasswordStrengthMeter = ({ password, darkMode = false }) => {
   const getStrength = (pass) => {
     let strength = 0;
     if (pass.length >= 6) strength++;
@@ -46,68 +49,85 @@ const PasswordStrengthMeter = ({ password }) => {
 
   const strength = getStrength(password);
 
-  const getColor = (strength) => {
-    switch (strength) {
-      case 0:
-        return "bg-[#E63946]";
-      case 1:
-        return "bg-[#F4A261]";
-      case 2:
-        return "bg-[#2C7DA0]";
-      case 3:
-        return "bg-[#2ECC71]";
-      default:
-        return "bg-[#01497C]";
-    }
-  };
+  const colors = darkMode
+    ? [
+        "bg-[#E63946]",
+        "bg-[#F4A261]",
+        "bg-[#2C7DA0]",
+        "bg-[#2ECC71]",
+        "bg-[#61A5C2]",
+      ]
+    : [
+        "bg-[#E63946]",
+        "bg-[#F4A261]",
+        "bg-[#2C7DA0]",
+        "bg-[#2ECC71]",
+        "bg-[#01497C]",
+      ];
 
-  const getTextColor = (strength) => {
-    switch (strength) {
-      case 0:
-        return "text-[#E63946]";
-      case 1:
-        return "text-[#F4A261]";
-      case 2:
-        return "text-[#2C7DA0]";
-      case 3:
-        return "text-[#2ECC71]";
-      default:
-        return "text-[#01497C]";
-    }
-  };
+  const textColors = darkMode
+    ? [
+        "text-[#E63946]",
+        "text-[#F4A261]",
+        "text-[#2C7DA0]",
+        "text-[#2ECC71]",
+        "text-[#61A5C2]",
+      ]
+    : [
+        "text-[#E63946]",
+        "text-[#F4A261]",
+        "text-[#2C7DA0]",
+        "text-[#2ECC71]",
+        "text-[#01497C]",
+      ];
 
   const getStrengthText = (strength) => {
-    if (strength === 0) return "Very Weak";
-    if (strength === 1) return "Weak";
-    if (strength === 2) return "Fair";
-    if (strength === 3) return "Good";
-    return "Strong";
+    switch (strength) {
+      case 0:
+        return "Very Weak";
+      case 1:
+        return "Weak";
+      case 2:
+        return "Fair";
+      case 3:
+        return "Good";
+      default:
+        return "Strong";
+    }
   };
 
   return (
-    <div className='mt-3'>
+    <div className="mt-3">
       {/* Header */}
-      <div className='flex justify-between items-center mb-1'>
-        <span className='text-xs text-[#6C757D]'>Password Strength</span>
-        <span className={`text-xs font-medium ${getTextColor(strength)}`}>
+      <div className="flex justify-between items-center mb-1">
+        <span
+          className={`text-xs ${darkMode ? "text-[#89A0B2]" : "text-[#6C757D]"}`}
+        >
+          Password Strength
+        </span>
+        <span className={`text-xs font-medium ${textColors[strength]}`}>
           {getStrengthText(strength)}
         </span>
       </div>
 
       {/* Progress Bars */}
-      <div className='flex space-x-1'>
+      <div className="flex space-x-1">
         {[...Array(4)].map((_, index) => (
           <div
             key={index}
             className={`h-1.5 w-1/4 rounded-full transition-all duration-500 ease-in-out ${
-              index < strength ? `${getColor(strength)}` : "bg-[#E2E8F0]" // neutral divider tone
+              index < strength
+                ? colors[strength]
+                : darkMode
+                  ? "bg-[#1E3A5F]"
+                  : "bg-[#E2E8F0]"
             }`}
           />
         ))}
       </div>
 
       {/* Criteria */}
-      <PasswordCriteria password={password} />
+      <PasswordCriteria password={password} darkMode={darkMode} />
     </div>
   );
 };

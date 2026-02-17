@@ -19,20 +19,22 @@ const Footer = () => {
   };
 
   return (
-    <footer className='w-full bg-[#013A63] text-[#E0F2FF] border-t border-[#1E3A5F] py-10 px-6 mt-20'>
-      <div className='max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8'>
+    <footer className="w-full bg-[#013A63] text-[#E0F2FF] border-t border-[#1E3A5F] py-10 px-6 mt-20">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
         {/* Left Section: Logo + About */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition}
-          className='text-center md:text-left space-y-2'>
+          className="text-center md:text-left space-y-2"
+        >
           <h2
-            className='text-2xl font-extrabold tracking-tight bg-gradient-to-r 
-              from-[#A9D6E5] to-[#61A5C2] bg-clip-text text-transparent'>
+            className="text-2xl font-extrabold tracking-tight bg-gradient-to-r 
+              from-[#A9D6E5] to-[#61A5C2] bg-clip-text text-transparent"
+          >
             {APP_NAME}
           </h2>
-          <p className='text-[#CBE5F5] text-sm max-w-md'>
+          <p className="text-[#CBE5F5] text-sm max-w-md">
             Streamline your social media workflow with intelligent automation —
             plan, post, and analyze effortlessly.
           </p>
@@ -43,7 +45,8 @@ const Footer = () => {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...transition, delay: 0.1 }}
-          className='flex flex-wrap justify-center gap-6 text-sm font-medium'>
+          className="flex flex-wrap justify-center gap-6 text-sm font-medium"
+        >
           {footerLinks.map((link, i) => (
             <motion.li
               key={i}
@@ -53,8 +56,9 @@ const Footer = () => {
                 transition: { duration: 0.3 },
               }}
               transition={transition}
-              className='transition-colors duration-300 hover:text-[#A9D6E5] cursor-pointer'
-              onClick={() => (window.location.href = link.path)}>
+              className="transition-colors duration-300 hover:text-[#A9D6E5] cursor-pointer"
+              onClick={() => (window.location.href = link.path)}
+            >
               {link.label}
             </motion.li>
           ))}
@@ -65,7 +69,8 @@ const Footer = () => {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...transition, delay: 0.2 }}
-          className='flex justify-center md:justify-end gap-4 text-[#CBE5F5]'>
+          className="flex justify-center md:justify-end gap-4 text-[#CBE5F5]"
+        >
           {[
             { Icon: Facebook, label: "Facebook" },
             { Icon: Twitter, label: "Twitter" },
@@ -74,16 +79,17 @@ const Footer = () => {
           ].map(({ Icon, label }, i) => (
             <motion.a
               key={label}
-              href='#'
+              href="#"
               whileHover={{
                 scale: 1.1,
                 color: "#A9D6E5",
                 transition: { duration: 0.25 },
               }}
               transition={transition}
-              className='hover:text-[#A9D6E5] transition-colors duration-300'
-              aria-label={label}>
-              <Icon className='w-5 h-5' />
+              className="hover:text-[#A9D6E5] transition-colors duration-300"
+              aria-label={label}
+            >
+              <Icon className="w-5 h-5" />
             </motion.a>
           ))}
         </motion.div>
@@ -94,9 +100,10 @@ const Footer = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ ...transition, delay: 0.4 }}
-        className='border-t border-[#1E3A5F] mt-8 pt-6 text-center text-sm text-[#89A0B2]'>
+        className="border-t border-[#1E3A5F] mt-8 pt-6 text-center text-sm text-[#89A0B2]"
+      >
         © {year}{" "}
-        <span className='font-semibold text-[#A9D6E5]'>{APP_NAME}</span>. All
+        <span className="font-semibold text-[#A9D6E5]">{APP_NAME}</span>. All
         rights reserved.
       </motion.div>
     </footer>
