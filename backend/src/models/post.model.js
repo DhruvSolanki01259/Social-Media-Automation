@@ -1,62 +1,99 @@
 import mongoose from "mongoose";
 
-const commentSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    text: { type: String, required: true, trim: true },
-    createdAt: { type: Date, default: Date.now },
-  },
-  { _id: true }
-);
-
 const postSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true },
-    caption: { type: String, trim: true },
-    hashtags: [{ type: String, trim: true }],
-    mediaUrl: { type: String, required: true }, // image/video URL
-    mediaType: { type: String, enum: ["image", "video"], required: true },
-
-    // which user created the post
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-
-    // scheduling fields
-    status: {
+    title: {
       type: String,
-      enum: ["pending", "posted"],
-      default: "pending",
+      required: true,
+      trim: true,
+      maxlength: 100,
     },
-    scheduledFor: {
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      required: true,
+    },
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    socialMedia: {
+      type: [String],
+      enum: ["facebook", "instagram", "twitter", "linkedin"],
+      required: true,
+      validate: {
+        validator: (arr) => arr.length > 0,
+        message: "At least one social media platform must be selected",
+      },
+    },
+    category: {
+      type: String,
+      enum: [
+        "Adventure",
+        "Marketing",
+        "Education",
+        "Entertainment",
+        "News",
+        "Lifestyle",
+        "Health & Fitness",
+        "Food & Recipes",
+        "Travel",
+        "Technology",
+        "Business",
+        "Finance",
+        "Fashion",
+        "Beauty",
+        "Gaming",
+        "Sports",
+        "Music",
+        "Photography",
+        "DIY & Crafts",
+        "Motivation & Inspiration",
+        "Science",
+        "Politics",
+        "Culture",
+        "Memes",
+        "Other",
+      ],
+      default: "Other",
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+    time: {
+      type: String, // e.g., "14:30"
+      default: "",
+    },
+    isScheduled: {
+      type: Boolean,
+      default: false,
+    },
+    scheduledAt: {
       type: Date,
       default: null,
     },
-
-    // engagement fields
-    likes: [
+    isPosted: {
+      type: Boolean,
+      default: false,
+    },
+    mediaUrls: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        type: String,
+        default: "",
       },
     ],
-    shares: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    comments: [commentSchema],
   },
   { timestamps: true }
 );
 
 const Post = mongoose.model("Post", postSchema);
-
 export default Post;

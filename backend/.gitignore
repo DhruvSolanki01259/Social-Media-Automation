@@ -1,0 +1,73 @@
+# --- Node dependencies ---
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- Environment variables ---
+.env
+.env.*
+!.env.example
+
+# --- Logs & Debugging ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+
+# --- Build & Output ---
+dist/
+build/
+coverage/
+tmp/
+temp/
+
+# --- Cache & Runtime ---
+.cache/
+.nyc_output/
+.pnp/
+.pnp.js
+.eslintcache
+*.pid
+*.seed
+*.pid.lock
+
+# --- IDE / Editor settings ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Optional local databases / uploads ---
+uploads/
+storage/
+*.sqlite
+*.sqlite3
+db.sqlite3
+
+# --- TypeScript build artifacts ---
+*.tsbuildinfo
+
+# --- Docker & Containers ---
+docker-compose.override.yml
+Dockerfile.dev
+
+# --- Testing ---
+coverage/
+jest-html-reporters-*.html
+jest-coverage/
+
+# --- Misc / temp ---
+*.bak
+*.tmp
+*.orig

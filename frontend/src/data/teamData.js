@@ -1,0 +1,45 @@
+export const teamData = {
+  guide: {
+    name: "",
+    designation: "Project Guide & Associate Professor",
+    department: "Computer Engineering",
+    email: "",
+    phone: "+91 ",
+    profileImage: "./placeholder-user.jpg",
+    linkedin: "",
+    description: "",
+  },
+
+  teamMembers: [
+    {
+      name: "Dhruv Kanti Solanki",
+      role: "",
+      email: "d.solanki@somaiya.edu",
+      phone: "+91 98332 81953",
+      linkedin: "",
+      github: "",
+      profileImage: "./placeholder-user.jpg",
+      description: "ABC",
+    },
+    {
+      name: "Aryan Jay Shah",
+      role: "",
+      email: "",
+      phone: "",
+      linkedin: "",
+      github: "",
+      profileImage: "./placeholder-user.jpg",
+      description: "ABC",
+    },
+    {
+      name: "Ayush Mukesh Togadiya",
+      role: "",
+      email: "",
+      phone: "",
+      linkedin: "",
+      github: "",
+      profileImage: "./placeholder-user.jpg",
+      description: "ABC",
+    },
+  ],
+};
