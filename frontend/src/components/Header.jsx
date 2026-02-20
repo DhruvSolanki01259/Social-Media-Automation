@@ -112,7 +112,14 @@ const Header = () => {
             <motion.button
               onClick={() => handleNavigate("/signup")}
               whileHover={{ scale: 1.03 }}
-              className="px-4 py-1.5 rounded-full border-2 border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white transition-colors duration-300"
+              className="
+                px-4 py-1.5 rounded-full
+                border-2 border-blue-800 dark:border-blue-400
+                text-blue-800 dark:text-blue-400
+                hover:bg-blue-800 hover:text-white
+                dark:hover:bg-blue-400 dark:hover:text-gray-900
+                transition-colors duration-300
+              "
             >
               Sign Up
             </motion.button>
@@ -160,7 +167,14 @@ const Header = () => {
               {!isSignedIn ? (
                 <button
                   onClick={() => handleNavigate("/signup")}
-                  className="border-2 border-blue-800 text-blue-800 px-4 py-2 rounded hover:bg-blue-800 hover:text-white transition-colors duration-300"
+                  className="
+                    border-2 border-blue-800 dark:border-blue-400
+                    text-blue-800 dark:text-blue-400
+                    px-4 py-2 rounded
+                    hover:bg-blue-800 hover:text-white
+                    dark:hover:bg-blue-400 dark:hover:text-gray-900
+                    transition-colors duration-300
+                  "
                 >
                   Sign Up
                 </button>

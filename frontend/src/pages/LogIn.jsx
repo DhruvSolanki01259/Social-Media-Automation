@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Lock, Mail, Loader, Github } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -6,25 +6,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSignIn } from "@clerk/clerk-react";
 
 import Input from "../components/Input";
+import { useThemeStore } from "../stores/theme.store";
 
 const Login = () => {
   const navigate = useNavigate();
   const { signIn, isLoaded, setActive } = useSignIn();
 
+  const { theme } = useThemeStore(); // ✅ SINGLE SOURCE
+  const isDark = theme === "dark"; // ✅ FIX
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Day/Night Mode
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    setDarkMode(prefersDark);
-  }, []);
 
   /* ---------------- EMAIL + PASSWORD LOGIN ---------------- */
   const handleLogin = async (e) => {
@@ -45,7 +39,7 @@ const Login = () => {
         navigate("/profile");
       }
     } catch (err) {
-      setError(err.errors?.[0]?.message || "Login failed");
+      setError(err?.errors?.[0]?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -67,19 +61,19 @@ const Login = () => {
   };
 
   /* ---------------- THEME COLORS ---------------- */
-  const bgPrimary = darkMode ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
-  const cardBg = darkMode
+  const bgPrimary = isDark ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
+  const cardBg = isDark
     ? "bg-[#102A43] border-[#1E3A5F]"
     : "bg-white border-[#E2E8F0]";
-  const leftBg = darkMode
+  const leftBg = isDark
     ? "bg-[#1E3A5F] border-r-[#2C7DA0]"
     : "bg-[#F1F5F9] border-r-[#E2E8F0]";
-  const textPrimary = darkMode ? "text-[#E0F2FF]" : "text-[#012A4A]";
-  const textSecondary = darkMode ? "text-[#61A5C2]/80" : "text-[#013A63]/80";
-  const inputBg = darkMode
+  const textPrimary = isDark ? "text-[#E0F2FF]" : "text-[#012A4A]";
+  const textSecondary = isDark ? "text-[#61A5C2]/80" : "text-[#013A63]/80";
+  const inputBg = isDark
     ? "bg-[#1E3A5F] text-[#E0F2FF] border-[#2C7DA0]"
     : "bg-[#F9FAFB] text-[#013A63] border-[#E2E8F0]";
-  const buttonBg = darkMode
+  const buttonBg = isDark
     ? "bg-[#61A5C2] hover:bg-[#89C2D9]"
     : "bg-[#01497C] hover:bg-[#014F86]";
 
@@ -93,7 +87,7 @@ const Login = () => {
         transition={{ duration: 0.6 }}
         className={`flex w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden ${cardBg}`}
       >
-        {/* Left */}
+        {/* LEFT */}
         <div
           className={`hidden md:flex md:w-1/2 flex-col items-center justify-center p-10 ${leftBg}`}
         >
@@ -106,7 +100,7 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Right */}
+        {/* RIGHT */}
         <div className="w-full md:w-1/2 flex justify-center items-center p-8">
           <div className="w-full max-w-md">
             <h2
@@ -134,6 +128,19 @@ const Login = () => {
                 className={inputBg}
               />
 
+              {/* FORGOT PASSWORD */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className={`text-sm font-medium ${
+                    isDark ? "text-[#61A5C2]" : "text-[#01497C]"
+                  } hover:underline`}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               {error && (
                 <p className="text-[#E63946] text-sm text-center font-medium">
                   {error}
@@ -155,53 +162,53 @@ const Login = () => {
               </motion.button>
             </form>
 
-            {/* Divider */}
+            {/* DIVIDER */}
             <div className="flex items-center my-6">
               <hr
-                className={
-                  darkMode
-                    ? "flex-grow border-[#2C7DA0]"
-                    : "flex-grow border-[#E2E8F0]"
-                }
+                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
               />
               <span
-                className={`mx-3 text-sm ${darkMode ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
+                className={`mx-3 text-sm ${isDark ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
               >
                 or continue with
               </span>
               <hr
-                className={
-                  darkMode
-                    ? "flex-grow border-[#2C7DA0]"
-                    : "flex-grow border-[#E2E8F0]"
-                }
+                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
               />
             </div>
 
-            {/* OAuth */}
+            {/* OAUTH */}
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => handleSocialLogin("google")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${darkMode ? "border-[#2C7DA0] hover:bg-[#1E3A5F]" : "hover:bg-[#F1F5F9]"}`}
+                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
+                  isDark
+                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
+                    : "hover:bg-[#F1F5F9]"
+                }`}
               >
                 <FcGoogle className="w-5 h-5" /> Google
               </button>
 
               <button
                 onClick={() => handleSocialLogin("github")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${darkMode ? "border-[#2C7DA0] hover:bg-[#1E3A5F]" : "hover:bg-[#F1F5F9]"}`}
+                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
+                  isDark
+                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
+                    : "hover:bg-[#F1F5F9]"
+                }`}
               >
                 <Github className="w-5 h-5" /> GitHub
               </button>
             </div>
 
-            <p
-              className={`mt-6 text-center text-sm ${darkMode ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
-            >
+            <p className={`mt-6 text-center text-sm ${textSecondary}`}>
               Don’t have an account?{" "}
               <Link
                 to="/signup"
-                className={`${darkMode ? "text-[#61A5C2]" : "text-[#01497C]"} font-medium hover:underline`}
+                className={`font-medium ${
+                  isDark ? "text-[#61A5C2]" : "text-[#01497C]"
+                } hover:underline`}
               >
                 Sign Up
               </Link>

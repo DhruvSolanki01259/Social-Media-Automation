@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { MapPin, UserPen, Settings2, Link2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUser, useClerk } from "@clerk/clerk-react";
+import { generateUserFromEmail } from "../utils/username";
 
 /* ---------------- Animations ---------------- */
 const fadeUp = (delay = 0) => ({
@@ -32,6 +33,14 @@ const Profile = () => {
     facebook: "",
     twitter: "",
   });
+
+  // Get the username and fullname
+  useEffect(() => {
+    const { username, fullName } = generateUserFromEmail(
+      user.primaryEmailAddress?.emailAddress,
+    );
+    user.username = fullName;
+  }, [user]);
 
   /* ---------------- Load from Clerk Metadata ---------------- */
   useEffect(() => {
@@ -164,7 +173,7 @@ const Profile = () => {
 
                 <button
                   onClick={() => setEditMode(true)}
-                  className="mt-6 flex items-center gap-2 border border-[#01497C] dark:border-[#61A5C2] px-4 py-2 rounded-lg text-[#01497C] dark:text-[#61A5C2] hover:bg-[#01497C] dark:hover:bg-[#61A5C2] hover:text-white transition"
+                  className=" mt-6 flex items-center gap-2 border border-[#01497C] dark:border-[#61A5C2] px-4 py-2 rounded-lg text-[#01497C] dark:text-[#61A5C2] hover:bg-[#01497C] hover:text-white dark:hover:bg-[#61A5C2] dark:hover:text-[#012A4A] transition "
                 >
                   <UserPen className="w-4 h-4" />
                   Edit Profile

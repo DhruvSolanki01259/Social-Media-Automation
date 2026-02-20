@@ -50,7 +50,7 @@ const Home = () => {
               <>
                 Welcome back,{" "}
                 <span className="text-blue-800 dark:text-blue-400">
-                  {user.firstName || "Creator"}
+                  Creator
                 </span>
               </>
             ) : (
@@ -82,7 +82,7 @@ const Home = () => {
 
             {!isSignedIn && (
               <button
-                onClick={() => navigate("/sign-in")}
+                onClick={() => navigate("/signup")}
                 className="border border-blue-800 text-blue-800 px-8 py-3 rounded-xl hover:bg-blue-100 dark:hover:bg-gray-800 dark:border-blue-400 dark:text-blue-400"
               >
                 Login

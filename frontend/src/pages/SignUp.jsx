@@ -1,35 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Mail, User, Loader, Github } from "lucide-react";
+import { Lock, Mail, Loader, Github } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { useSignUp } from "@clerk/clerk-react";
 
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import Input from "../components/Input";
-import GenderCheckbox from "../components/GenderCheckbox";
+import { useThemeStore } from "../stores/theme.store";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { isLoaded, signUp } = useSignUp();
 
-  const [username, setUsername] = useState("");
+  const { theme } = useThemeStore(); // ✅ SINGLE SOURCE
+  const isDark = theme === "dark"; // ✅ FIX
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Day/Night Mode
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Auto-detect system preference
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    setDarkMode(prefersDark);
-  }, []);
 
   /* ---------------- EMAIL + PASSWORD SIGNUP ---------------- */
   const handleSignUp = async (e) => {
@@ -38,7 +28,7 @@ const SignUp = () => {
 
     if (!isLoaded) return;
 
-    if (!username || !email || !password || !gender) {
+    if (!email || !password) {
       setError("Please fill all required fields");
       return;
     }
@@ -46,26 +36,27 @@ const SignUp = () => {
     try {
       setLoading(true);
 
-      await signUp.create({
+      const result = await signUp.create({
         emailAddress: email,
         password,
-        username,
-        publicMetadata: { gender },
       });
 
-      await signUp.prepareEmailAddressVerification({
-        strategy: "email_code",
-      });
+      if (result.status === "missing_requirements") {
+        await signUp.prepareEmailAddressVerification({
+          strategy: "email_code",
+        });
 
-      navigate("/verify-email");
+        navigate("/verify-email");
+      }
     } catch (err) {
-      setError(err.errors?.[0]?.message || "Signup failed");
+      console.error("Signup error:", err);
+      setError(err?.errors?.[0]?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------- OAUTH (GOOGLE / GITHUB) ---------------- */
+  /* ---------------- OAUTH ---------------- */
   const handleOAuth = async (provider) => {
     if (!isLoaded) return;
 
@@ -81,16 +72,16 @@ const SignUp = () => {
   };
 
   /* ---------------- THEME COLORS ---------------- */
-  const bgPrimary = darkMode ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
-  const cardBg = darkMode
+  const bgPrimary = isDark ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
+  const cardBg = isDark
     ? "bg-[#102A43] border-[#1E3A5F]"
     : "bg-white border-[#E2E8F0]";
-  const textPrimary = darkMode ? "text-[#E0F2FF]" : "text-[#012A4A]";
-  const textSecondary = darkMode ? "text-[#61A5C2]/80" : "text-[#013A63]/80";
-  const inputBg = darkMode
+  const textPrimary = isDark ? "text-[#E0F2FF]" : "text-[#012A4A]";
+  const textSecondary = isDark ? "text-[#61A5C2]/80" : "text-[#013A63]/80";
+  const inputBg = isDark
     ? "bg-[#1E3A5F] text-[#E0F2FF] border-[#2C7DA0]"
     : "bg-[#F9FAFB] text-[#013A63] border-[#E2E8F0]";
-  const buttonBg = darkMode
+  const buttonBg = isDark
     ? "bg-[#61A5C2] hover:bg-[#89C2D9]"
     : "bg-[#01497C] hover:bg-[#014F86]";
 
@@ -117,14 +108,6 @@ const SignUp = () => {
               <div id="clerk-captcha" />
 
               <Input
-                icon={User}
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={inputBg}
-              />
-
-              <Input
                 icon={Mail}
                 type="email"
                 placeholder="Email"
@@ -142,13 +125,7 @@ const SignUp = () => {
                 className={inputBg}
               />
 
-              <GenderCheckbox
-                selectedGender={gender}
-                onCheckboxChange={setGender}
-                darkMode={darkMode}
-              />
-
-              <PasswordStrengthMeter password={password} darkMode={darkMode} />
+              <PasswordStrengthMeter password={password} darkMode={isDark} />
 
               {error && (
                 <p className="text-[#E63946] text-sm text-center font-medium">
@@ -161,10 +138,19 @@ const SignUp = () => {
                 whileTap={{ scale: 0.97 }}
                 type="submit"
                 disabled={loading}
-                className={`w-full py-3 rounded-lg text-white font-semibold ${buttonBg}`}
+                className={`
+                  w-full py-3 rounded-lg font-semibold
+                  transition-colors duration-200
+                  ${buttonBg}
+                  text-white
+                  hover:text-white
+                  dark:text-white
+                  dark:hover:text-white
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                `}
               >
                 {loading ? (
-                  <Loader className="w-5 h-5 animate-spin mx-auto" />
+                  <Loader className="w-5 h-5 animate-spin mx-auto text-white" />
                 ) : (
                   "Sign Up"
                 )}
@@ -174,23 +160,15 @@ const SignUp = () => {
             {/* DIVIDER */}
             <div className="flex items-center my-6">
               <hr
-                className={
-                  darkMode
-                    ? "flex-grow border-[#2C7DA0]"
-                    : "flex-grow border-[#E2E8F0]"
-                }
+                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
               />
               <span
-                className={`mx-3 text-sm ${darkMode ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
+                className={`mx-3 text-sm ${isDark ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
               >
                 or continue with
               </span>
               <hr
-                className={
-                  darkMode
-                    ? "flex-grow border-[#2C7DA0]"
-                    : "flex-grow border-[#E2E8F0]"
-                }
+                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
               />
             </div>
 
@@ -198,27 +176,30 @@ const SignUp = () => {
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => handleOAuth("google")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${darkMode ? "border-[#2C7DA0] hover:bg-[#1E3A5F]" : "hover:bg-[#F1F5F9]"}`}
+                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
+                  isDark
+                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
+                    : "hover:bg-[#F1F5F9]"
+                }`}
               >
                 <FcGoogle className="w-5 h-5" /> Google
               </button>
 
               <button
                 onClick={() => handleOAuth("github")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${darkMode ? "border-[#2C7DA0] hover:bg-[#1E3A5F]" : "hover:bg-[#F1F5F9]"}`}
+                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
+                  isDark
+                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
+                    : "hover:bg-[#F1F5F9]"
+                }`}
               >
                 <Github className="w-5 h-5" /> GitHub
               </button>
             </div>
 
-            <p
-              className={`mt-6 text-center text-sm ${darkMode ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
-            >
+            <p className={`mt-6 text-center text-sm ${textSecondary}`}>
               Already have an account?{" "}
-              <Link
-                to="/login"
-                className={`${darkMode ? "text-[#61A5C2]" : "text-[#01497C]"} font-medium hover:underline`}
-              >
+              <Link to="/login" className="font-medium hover:underline">
                 Login
               </Link>
             </p>
@@ -227,7 +208,11 @@ const SignUp = () => {
 
         {/* RIGHT */}
         <div
-          className={`hidden md:flex md:w-1/2 border-l p-10 items-center justify-center flex-col ${darkMode ? "bg-[#1E3A5F] border-[#2C7DA0]" : "bg-[#F1F5F9] border-l-[#E2E8F0]"}`}
+          className={`hidden md:flex md:w-1/2 border-l p-10 items-center justify-center flex-col ${
+            isDark
+              ? "bg-[#1E3A5F] border-[#2C7DA0]"
+              : "bg-[#F1F5F9] border-l-[#E2E8F0]"
+          }`}
         >
           <img src="/signup-image.png" className="w-96 mb-6" />
           <h3 className={`${textPrimary} text-3xl font-bold`}>

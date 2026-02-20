@@ -62,11 +62,18 @@ const ContentStudio = () => {
               </div>
               <button
                 onClick={() => setIsCreatingPost(true)}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg border border-[#01497C] dark:border-[#61A5C2] 
-                           text-[#01497C] dark:text-[#61A5C2] font-medium 
-                           hover:bg-[#01497C] dark:hover:bg-[#61A5C2] hover:text-white transition-all"
+                className="
+    flex items-center gap-2
+    px-5 py-2 rounded-lg
+    border border-[#01497C] dark:border-[#61A5C2]
+    text-[#01497C] dark:text-[#61A5C2]
+    font-medium
+    hover:bg-[#01497C] hover:text-white
+    dark:hover:bg-[#61A5C2] dark:hover:text-[#012A4A]
+    transition-all
+  "
               >
-                <PlusCircle size={20} />
+                <PlusCircle size={20} className="transition-colors" />
                 Create Post
               </button>
             </div>
@@ -99,8 +106,15 @@ const ContentStudio = () => {
                   {/* Advanced Filters Button */}
                   <button
                     onClick={() => setShowAdvanced((prev) => !prev)}
-                    className="flex items-center gap-2 bg-[#01497C] dark:bg-[#61A5C2] text-white font-medium 
-                               px-5 py-3 rounded-lg shadow-sm hover:bg-[#014F86] dark:hover:bg-[#89C2D9] transition-all whitespace-nowrap"
+                    className="
+    flex items-center gap-2
+    bg-[#01497C] dark:bg-[#61A5C2]
+    text-white dark:text-[#012A4A]
+    font-medium px-5 py-3 rounded-lg shadow-sm
+    hover:bg-[#014F86] hover:text-white
+    dark:hover:bg-[#89C2D9] dark:hover:text-[#012A4A]
+    transition-all whitespace-nowrap
+  "
                   >
                     <ChevronDown
                       size={18}
@@ -169,40 +183,46 @@ const ContentStudio = () => {
               <h2 className="text-2xl font-semibold text-[#013A63] dark:text-[#CBE5F5] mb-6">
                 Overview
               </h2>
+
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   {
                     label: "Total Posts",
                     value: posts.length,
-                    color: "#01497C",
+                    color: "text-[#01497C] dark:text-[#89C2D9]",
                   },
                   {
                     label: "Uploaded Posts",
                     value: uploadedPosts.length,
-                    color: "#2A6F97",
+                    color: "text-[#2A6F97] dark:text-[#A9D6E5]",
                   },
                   {
                     label: "Scheduled Posts",
                     value: scheduledPosts.length,
-                    color: "#468FAF",
+                    color: "text-[#468FAF] dark:text-[#CBE5F5]",
                   },
                   {
                     label: "Search Active",
                     value: searchTerm ? "Yes" : "No",
-                    color: "#6C757D",
+                    color: "text-[#6C757D] dark:text-gray-300",
                   },
                 ].map((item, i) => (
                   <motion.div
                     key={i}
                     {...fadeUp(i * 0.05)}
-                    className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-[#E2E8F0] dark:border-gray-700 shadow-sm text-center"
+                    className="
+          bg-white dark:bg-gray-800
+          p-5 rounded-xl
+          border border-[#E2E8F0] dark:border-gray-700
+          shadow-sm hover:shadow-md
+          transition-shadow
+          text-center
+        "
                   >
-                    <h3
-                      className="text-lg font-semibold"
-                      style={{ color: item.color }}
-                    >
+                    <h3 className={`text-lg font-semibold ${item.color}`}>
                       {item.label}
                     </h3>
+
                     <p className="text-2xl font-bold text-[#012A4A] dark:text-white mt-2">
                       {item.value}
                     </p>

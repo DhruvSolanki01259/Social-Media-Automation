@@ -151,9 +151,19 @@ const Contact = () => {
             <div className="flex justify-center">
               <button
                 type="submit"
-                className="flex items-center gap-2 bg-[#01497C] dark:bg-[#61A5C2] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#014F86] dark:hover:bg-[#89C2D9] transition-all duration-300 shadow-md hover:shadow-lg"
+                className="
+    flex items-center gap-2
+    bg-[#01497C] dark:bg-[#61A5C2]
+    text-white dark:text-[#012A4A]
+    px-6 py-3 rounded-xl font-semibold
+    hover:bg-[#014F86] hover:text-white
+    dark:hover:bg-[#89C2D9] dark:hover:text-[#012A4A]
+    transition-all duration-300
+    shadow-md hover:shadow-lg
+  "
               >
-                <Send className="w-5 h-5" /> Send Message
+                <Send className="w-5 h-5 transition-colors" />
+                Send Message
               </button>
             </div>
           </form>

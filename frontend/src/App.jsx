@@ -18,6 +18,8 @@ import ContentStudio from "./pages/ContentStudio";
 import SsoCallback from "./components/SsoCallback";
 import { PublicRoute } from "./routes/PublicRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
+import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(false);
@@ -72,9 +74,25 @@ const App = () => {
                 }
               />
 
-              <Route path="/sso-callback" element={<SsoCallback />} />
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicRoute>
+                    <ForgotPassword />
+                  </PublicRoute>
+                }
+              />
 
               {/* Protected */}
+              {/* <Route
+  path="/verify-email"
+  element={
+    <ProtectedRoute>
+    <VerifyEmail />
+    </ProtectedRoute>
+    }
+    /> */}
+
               <Route
                 path="/profile"
                 element={
@@ -110,6 +128,12 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Verify Email */}
+              <Route path="/verify-email" element={<VerifyEmail />} />
+
+              {/* SSO Callback */}
+              <Route path="/sso-callback" element={<SsoCallback />} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
