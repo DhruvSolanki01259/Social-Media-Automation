@@ -1,118 +1,143 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useThemeStore } from "../stores/theme.store";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-const textVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: (delay) => ({
-    y: 0,
-    opacity: 1,
-    transition: { delay, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] },
-  }),
+/* ---------------- Animations ---------------- */
+const containerFade = {
+  initial: { opacity: 1 },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.9, ease: [0.4, 0, 0.2, 1] },
+  },
 };
 
 const logoDrop = {
-  hidden: { y: -60, opacity: 0 },
+  hidden: { y: -40, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: { duration: 0.7, ease: [0.25, 0.1, 0.25, 1] },
+    transition: { duration: 0.6 },
   },
+};
+
+const textVariants = {
+  hidden: { y: 16, opacity: 0 },
+  visible: (delay) => ({
+    y: 0,
+    opacity: 1,
+    transition: { delay, duration: 0.5 },
+  }),
 };
 
 const burst = {
-  initial: { scale: 1, opacity: 1 },
   animate: {
-    scale: [1, 1.15, 0.9, 3],
-    opacity: [1, 1, 0.8, 0],
-    transition: { duration: 1.2, ease: [0.42, 0, 0.58, 1] },
+    scale: [1, 1.2, 0.9, 3],
+    opacity: [1, 1, 0.6, 0],
+    transition: { duration: 1.2 },
   },
 };
 
-const SplashScreen = ({ onComplete, darkMode = false }) => {
-  const [visible, setVisible] = useState(true);
+const SplashScreen = ({ onComplete }) => {
+  const { theme } = useThemeStore();
+  const resolvedTheme = theme || "dark"; // 🔑 CRITICAL
+  const isDark = resolvedTheme === "dark";
 
+  const [phase, setPhase] = useState("splash");
+
+  const themeTokens = {
+    bg: isDark ? "#0B1220" : "#F8FAFC",
+    primary: isDark ? "#FFFFFF" : "#012A4A",
+    secondary: isDark ? "#90DBF4" : "#01497C",
+    burst: isDark
+      ? "from-[#1E3A8A]/30 to-[#38BDF8]/30"
+      : "from-[#01497C]/20 to-[#61A5C2]/25",
+  };
+
+  /* 🔒 Background lock */
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-      setTimeout(() => onComplete?.(), 900);
-    }, 3600);
+    const root = document.documentElement;
+    const body = document.body;
 
-    return () => clearTimeout(timer);
+    root.style.backgroundColor = themeTokens.bg;
+    body.style.backgroundColor = themeTokens.bg;
+
+    return () => {
+      requestAnimationFrame(() => {
+        root.style.backgroundColor = "";
+        body.style.backgroundColor = "";
+      });
+    };
+  }, [themeTokens.bg]);
+
+  /* ⏱ Timeline */
+  useEffect(() => {
+    const splash = setTimeout(() => setPhase("spinner"), 2800);
+    const done = setTimeout(() => {
+      onComplete?.();
+    }, 4200);
+
+    return () => {
+      clearTimeout(splash);
+      clearTimeout(done);
+    };
   }, [onComplete]);
-
-  /* ---------------- Theme Colors ---------------- */
-  const backgroundColor = darkMode ? "#0B1E30" : "#F8FAFC";
-  const textPrimary = darkMode ? "#FFFFFF" : "#012A4A";
-  const textSecondary = darkMode ? "#61A5C2" : "#01497C";
-  const burstGradient = darkMode
-    ? "from-[#61A5C2]/20 to-[#A9D6E5]/25"
-    : "from-[#01497C]/20 to-[#61A5C2]/25";
 
   return (
     <AnimatePresence>
-      {visible && (
+      {phase !== "done" && (
         <motion.div
-          className="fixed inset-0 flex items-center justify-center z-[9999]"
-          initial={{ opacity: 1, backgroundColor }}
-          animate={{ opacity: 1, backgroundColor }}
-          exit={{
-            opacity: 0,
-            backgroundColor: "rgba(0,0,0,0)",
-            transition: { duration: 0.9, ease: "easeInOut" },
-          }}
+          variants={containerFade}
+          initial="initial"
+          exit="exit"
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          style={{ backgroundColor: themeTokens.bg }}
         >
-          {/* Main logo + text */}
-          <motion.div
-            className="relative flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 px-6"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] },
-            }}
-          >
-            <motion.img
-              src="/app-logo.png"
-              alt="Social Media Automation"
-              className="max-w-[160px] sm:max-w-[200px] h-auto drop-shadow-xl"
-              style={{ objectFit: "contain" }}
-              variants={logoDrop}
-              initial="hidden"
-              animate="visible"
-            />
+          {phase === "splash" && (
+            <>
+              <motion.div className="flex flex-col sm:flex-row items-center gap-6">
+                <motion.img
+                  src="/app-logo.png"
+                  className="max-w-[180px]"
+                  variants={logoDrop}
+                  initial="hidden"
+                  animate="visible"
+                />
 
-            <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-              <motion.h1
-                custom={0.4}
-                variants={textVariants}
-                initial="hidden"
-                animate="visible"
-                className={`text-4xl sm:text-5xl font-bold tracking-tight`}
-                style={{ color: textPrimary }}
-              >
-                Social Media
-              </motion.h1>
+                <div>
+                  <motion.h1
+                    custom={0.2}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="text-4xl font-bold"
+                    style={{ color: themeTokens.primary }}
+                  >
+                    Social Media
+                  </motion.h1>
 
-              <motion.h1
-                custom={0.7}
-                variants={textVariants}
-                initial="hidden"
-                animate="visible"
-                className={`text-4xl sm:text-5xl font-bold tracking-tight`}
-                style={{ color: textSecondary }}
-              >
-                Automation
-              </motion.h1>
-            </div>
-          </motion.div>
+                  <motion.h1
+                    custom={0.45}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="text-4xl font-bold"
+                    style={{ color: themeTokens.secondary }}
+                  >
+                    Automation
+                  </motion.h1>
+                </div>
+              </motion.div>
 
-          {/* Burst effect */}
-          <motion.div
-            variants={burst}
-            initial="initial"
-            animate="animate"
-            className={`absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full blur-2xl bg-gradient-to-r ${burstGradient}`}
-          />
+              <motion.div
+                variants={burst}
+                animate="animate"
+                className={`absolute w-72 h-72 rounded-full blur-3xl bg-gradient-to-r ${themeTokens.burst}`}
+              />
+            </>
+          )}
+
+          {phase === "spinner" && <LoadingSpinner darkMode={isDark} />}
         </motion.div>
       )}
     </AnimatePresence>

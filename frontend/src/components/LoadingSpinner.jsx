@@ -1,24 +1,37 @@
 import { motion } from "framer-motion";
 
-const LoadingSpinner = ({ darkMode = false }) => {
-  const borderBase = darkMode ? "#1E3A5F" : "#E2E8F0";
-  const borderTop = darkMode ? "#61A5C2" : "#01497C";
-  const bg = darkMode ? "#0B1E30" : "#F8FAFC";
-
+const LoadingSpinner = ({
+  label = "Loading",
+  overlay = false,
+  withBackdrop = false, // 👈 new control
+}) => {
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: bg }}
+      className={`
+        inset-0 z-50 flex items-center justify-center
+        ${overlay ? "absolute" : "fixed"}
+        ${withBackdrop ? "bg-spinner-bg backdrop-blur-sm" : "bg-transparent"}
+      `}
     >
-      <motion.div
-        className="w-14 h-14 rounded-full border-4"
-        style={{
-          borderColor: borderBase,
-          borderTopColor: borderTop,
-        }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
+      <div className="flex flex-col items-center gap-4">
+        <motion.div
+          className="h-12 w-12 rounded-full border-2"
+          style={{
+            borderColor: "var(--spinner-ring-base)",
+            borderTopColor: "var(--spinner-ring-accent)",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
+        />
+
+        <motion.p
+          className="text-sm tracking-wide select-none text-spinner-text"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ repeat: Infinity, duration: 1.4 }}
+        >
+          {label}
+        </motion.p>
+      </div>
     </div>
   );
 };

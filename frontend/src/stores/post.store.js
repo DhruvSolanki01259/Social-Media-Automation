@@ -1,122 +1,145 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "axios";
-
-const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/posts`;
-
-axios.defaults.withCredentials = true;
+import { createAxiosWithAuth } from "../lib/axiosWithAuth";
 
 export const usePostStore = create(
   persist(
     (set, get) => ({
       posts: [],
+      currentPost: null,
       loading: false,
       error: null,
-      searchTerm: "",
-      filters: {
-        category: "",
-        platform: "",
-        tag: "",
+      api: null,
+
+      /* ---------------- SET AXIOS ---------------- */
+
+      setApi: (getToken) => {
+        const api = createAxiosWithAuth(getToken);
+        set({ api });
       },
 
-      // ✅ Fetch all posts for authenticated user
+      /* ---------------- FETCH POSTS ---------------- */
+
       fetchPosts: async () => {
+        const { api } = get();
+        if (!api) return;
+
         set({ loading: true, error: null });
+
         try {
-          const { data } = await axios.get(API_URL);
-          set({ posts: data, loading: false });
-        } catch (error) {
-          console.error("Error fetching posts:", error);
+          const res = await api.get("/posts");
+
           set({
-            error: error.response?.data?.message || "Failed to load posts",
+            posts: res.data.posts || [],
+            loading: false,
+          });
+        } catch (err) {
+          set({
+            error: err.response?.data?.message || err.message,
             loading: false,
           });
         }
       },
 
-      // ✅ Create new post
+      /* ---------------- CREATE POST ---------------- */
+
       createPost: async (postData) => {
+        const { api } = get();
+        if (!api) return null;
+
+        set({ loading: true, error: null });
+
         try {
-          const { data } = await axios.post(API_URL, postData);
-          set({ posts: [data.post, ...get().posts] });
-          return data;
-        } catch (error) {
-          console.error("Error creating post:", error);
-          throw error.response?.data || error;
+          const res = await api.post("/posts", postData);
+
+          const newPost = res.data.post;
+
+          set((state) => ({
+            posts: [newPost, ...state.posts],
+            loading: false,
+          }));
+
+          return newPost;
+        } catch (err) {
+          const message =
+            err.response?.data?.message ||
+            err.message ||
+            "Failed to create post";
+
+          set({
+            error: message,
+            loading: false,
+          });
+
+          return null;
         }
       },
 
-      // ✅ Update post
-      updatePost: async (id, updatedData) => {
+      /* ---------------- UPDATE POST ---------------- */
+
+      updatePost: async (id, postData) => {
+        const { api } = get();
+        if (!api) return null;
+
+        set({ loading: true, error: null });
+
         try {
-          const { data } = await axios.put(`${API_URL}/${id}`, updatedData);
-          set({
-            posts: get().posts.map((p) =>
-              p._id === id ? { ...p, ...data.post } : p
+          const res = await api.put(`/posts/${id}`, postData);
+
+          const updatedPost = res.data.post;
+
+          set((state) => ({
+            posts: state.posts.map((p) =>
+              p._id === id ? updatedPost : p
             ),
-          });
-          return data;
-        } catch (error) {
-          console.error("Error updating post:", error);
-          throw error.response?.data || error;
-        }
-      },
+            loading: false,
+          }));
 
-      // ✅ Delete post
-      deletePost: async (id) => {
-        try {
-          await axios.delete(`${API_URL}/${id}`);
+          return updatedPost;
+        } catch (err) {
           set({
-            posts: get().posts.filter((p) => p._id !== id),
+            error: err.response?.data?.message || err.message,
+            loading: false,
           });
-        } catch (error) {
-          console.error("Error deleting post:", error);
-          throw error.response?.data || error;
+
+          return null;
         }
       },
 
-      // ✅ Search and filters
-      setSearchTerm: (term) => set({ searchTerm: term }),
-      setFilters: (filters) =>
-        set((state) => ({ filters: { ...state.filters, ...filters } })),
+      /* ---------------- DELETE POST ---------------- */
 
-      // ✅ Filtered posts logic
-      filteredPosts: () => {
-        const { posts, searchTerm, filters } = get();
-        if (!posts.length) return [];
+      deletePost: async (id) => {
+        const { api } = get();
+        if (!api) return false;
 
-        const keyword = searchTerm.trim().toLowerCase();
+        set({ loading: true, error: null });
 
-        return posts.filter((post) => {
-          const matchesSearch =
-            !keyword ||
-            post.title?.toLowerCase().includes(keyword) ||
-            post.description?.toLowerCase().includes(keyword);
+        try {
+          await api.delete(`/posts/${id}`);
 
-          const matchesCategory = filters.category
-            ? post.category?.toLowerCase() === filters.category.toLowerCase()
-            : true;
+          set((state) => ({
+            posts: state.posts.filter((p) => p._id !== id),
+            loading: false,
+          }));
 
-          const matchesPlatform = filters.platform
-            ? post.socialMedia?.some((s) =>
-                s.toLowerCase().includes(filters.platform.toLowerCase())
-              )
-            : true;
+          return true;
+        } catch (err) {
+          set({
+            error: err.response?.data?.message || err.message,
+            loading: false,
+          });
 
-          const matchesTag = filters.tag
-            ? post.tags?.some((t) =>
-                t.toLowerCase().includes(filters.tag.toLowerCase())
-              )
-            : true;
-
-          return (
-            matchesSearch && matchesCategory && matchesPlatform && matchesTag
-          );
-        });
+          return false;
+        }
       },
     }),
     {
-      name: "post-storage", // persisted key name
+      name: "post-storage", // localStorage key
+
+      /* Persist ONLY posts */
+      partialize: (state) => ({
+        posts: state.posts,
+      }),
     }
   )
 );

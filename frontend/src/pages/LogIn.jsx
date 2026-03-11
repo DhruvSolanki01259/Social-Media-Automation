@@ -1,32 +1,38 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Mail, Loader, Github } from "lucide-react";
+import { Lock, Mail, Github } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { useSignIn } from "@clerk/clerk-react";
 
 import Input from "../components/Input";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useThemeStore } from "../stores/theme.store";
 
 const Login = () => {
   const navigate = useNavigate();
   const { signIn, isLoaded, setActive } = useSignIn();
 
-  const { theme } = useThemeStore(); // ✅ SINGLE SOURCE
-  const isDark = theme === "dark"; // ✅ FIX
+  const { theme } = useThemeStore();
+  const isDark = theme === "dark";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  if (!isLoaded) return null;
+
   /* ---------------- EMAIL + PASSWORD LOGIN ---------------- */
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!isLoaded) return;
 
-    setError("");
+    if (loading) return;
+
     setLoading(true);
+    setError("");
 
     try {
       const result = await signIn.create({
@@ -35,20 +41,23 @@ const Login = () => {
       });
 
       if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+        await setActive({
+          session: result.createdSessionId,
+        });
+
+        setLoading(false);
         navigate("/profile");
       }
     } catch (err) {
-      setError(err?.errors?.[0]?.message || "Login failed");
-    } finally {
+      console.error(err);
+      setError(err?.errors?.[0]?.message || "Invalid credentials");
       setLoading(false);
     }
   };
 
   /* ---------------- OAUTH LOGIN ---------------- */
-  const handleSocialLogin = async (provider) => {
-    if (!isLoaded) return;
 
+  const handleSocialLogin = async (provider) => {
     try {
       await signIn.authenticateWithRedirect({
         strategy: `oauth_${provider}`,
@@ -56,11 +65,12 @@ const Login = () => {
         redirectUrlComplete: "/profile",
       });
     } catch (err) {
-      console.error("OAuth login error:", err);
+      console.error("OAuth error:", err);
     }
   };
 
-  /* ---------------- THEME COLORS ---------------- */
+  /* ---------------- THEME TOKENS ---------------- */
+
   const bgPrimary = isDark ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
   const cardBg = isDark
     ? "bg-[#102A43] border-[#1E3A5F]"
@@ -85,9 +95,14 @@ const Login = () => {
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className={`flex w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden ${cardBg}`}
+        className={`relative flex w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden border ${cardBg}`}
       >
+        {loading && (
+          <LoadingSpinner overlay label="Signing you in…" withBackdrop />
+        )}
+
         {/* LEFT */}
+
         <div
           className={`hidden md:flex md:w-1/2 flex-col items-center justify-center p-10 ${leftBg}`}
         >
@@ -101,6 +116,7 @@ const Login = () => {
         </div>
 
         {/* RIGHT */}
+
         <div className="w-full md:w-1/2 flex justify-center items-center p-8">
           <div className="w-full max-w-md">
             <h2
@@ -117,6 +133,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={inputBg}
+                disabled={loading}
               />
 
               <Input
@@ -126,9 +143,9 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={inputBg}
+                disabled={loading}
               />
 
-              {/* FORGOT PASSWORD */}
               <div className="text-right">
                 <button
                   type="button"
@@ -147,56 +164,28 @@ const Login = () => {
                 </p>
               )}
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-3 rounded-lg text-white font-semibold ${buttonBg}`}
+                className={`w-full py-3 rounded-lg text-white font-semibold ${buttonBg} disabled:opacity-70`}
               >
-                {loading ? (
-                  <Loader className="w-5 h-5 animate-spin mx-auto" />
-                ) : (
-                  "Log In"
-                )}
-              </motion.button>
+                Log In
+              </button>
             </form>
 
-            {/* DIVIDER */}
-            <div className="flex items-center my-6">
-              <hr
-                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
-              />
-              <span
-                className={`mx-3 text-sm ${isDark ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
-              >
-                or continue with
-              </span>
-              <hr
-                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
-              />
-            </div>
-
             {/* OAUTH */}
-            <div className="flex justify-center gap-4">
+
+            <div className="flex justify-center gap-4 mt-6">
               <button
                 onClick={() => handleSocialLogin("google")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
-                  isDark
-                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
-                    : "hover:bg-[#F1F5F9]"
-                }`}
+                className="flex items-center gap-2 px-5 py-2.5 border rounded-lg"
               >
                 <FcGoogle className="w-5 h-5" /> Google
               </button>
 
               <button
                 onClick={() => handleSocialLogin("github")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
-                  isDark
-                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
-                    : "hover:bg-[#F1F5F9]"
-                }`}
+                className="flex items-center gap-2 px-5 py-2.5 border rounded-lg"
               >
                 <Github className="w-5 h-5" /> GitHub
               </button>
@@ -204,12 +193,7 @@ const Login = () => {
 
             <p className={`mt-6 text-center text-sm ${textSecondary}`}>
               Don’t have an account?{" "}
-              <Link
-                to="/signup"
-                className={`font-medium ${
-                  isDark ? "text-[#61A5C2]" : "text-[#01497C]"
-                } hover:underline`}
-              >
+              <Link to="/signup" className="font-medium hover:underline">
                 Sign Up
               </Link>
             </p>

@@ -6,7 +6,7 @@ const Footer = () => {
   const year = new Date().getFullYear();
 
   const footerLinks = [
-    { label: "About", path: "/about" },
+    { label: "About", path: "/about-us" },
     { label: "Privacy Policy", path: "/privacy" },
     { label: "Terms of Service", path: "/terms" },
     { label: "Contact", path: "/contact" },

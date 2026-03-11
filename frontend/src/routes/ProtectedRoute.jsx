@@ -1,11 +1,12 @@
 import { useAuth } from "@clerk/clerk-react";
 import { Navigate } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export const ProtectedRoute = ({ children }) => {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) {
-    return <div className="text-center mt-20">Loading...</div>;
+    return <LoadingSpinner label="Checking authentication..." />;
   }
 
   if (!isSignedIn) {

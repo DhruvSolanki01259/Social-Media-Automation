@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   BarChart,
@@ -11,75 +11,105 @@ import {
   Pie,
   Cell,
 } from "recharts";
+
 import { useThemeStore } from "../stores/theme.store.js";
+import { usePostStore } from "../stores/post.store.js";
 
 const Analytics = () => {
   const { theme } = useThemeStore();
+  const { posts, fetchPosts } = usePostStore();
 
-  // Apply theme class to <html>
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Apply theme class
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
   }, [theme]);
 
-  // ✅ Sample Data
-  const summary = {
-    totalPosts: 24,
-    postedPosts: 15,
-    scheduledPosts: 6,
-    totalComments: 48,
-  };
+  /* ---------------- SUMMARY ---------------- */
 
-  const postsByDate = [
-    { date: "Nov 01", count: 3 },
-    { date: "Nov 02", count: 4 },
-    { date: "Nov 03", count: 5 },
-    { date: "Nov 04", count: 2 },
-    { date: "Nov 05", count: 6 },
-    { date: "Nov 06", count: 4 },
-  ];
+  const summary = useMemo(() => {
+    const totalPosts = posts.length;
 
-  const platformCount = [
-    { name: "Facebook", value: 8 },
-    { name: "Instagram", value: 6 },
-    { name: "LinkedIn", value: 5 },
-    { name: "Twitter", value: 5 },
-  ];
+    const scheduledPosts = posts.filter((p) => p.isScheduled).length;
 
-  const recentPosts = [
-    {
-      _id: "1",
-      title: "New Feature Launch 🚀",
-      description: "Announcing our latest product update.",
-      platforms: ["Facebook", "LinkedIn"],
-      isPosted: true,
-      isScheduled: false,
-    },
-    {
-      _id: "2",
-      title: "Community Highlights",
-      description: "Top posts from our amazing community!",
-      platforms: ["Instagram", "Twitter"],
-      isPosted: true,
-      isScheduled: false,
-    },
-    {
-      _id: "3",
-      title: "Upcoming Webinar",
-      description: "Join our live session on AI-driven automation.",
-      platforms: ["LinkedIn"],
-      isPosted: false,
-      isScheduled: true,
-    },
-    {
-      _id: "4",
-      title: "Behind the Scenes",
-      description: "A look at how we build our automation tools.",
-      platforms: ["Instagram"],
-      isPosted: false,
-      isScheduled: false,
-    },
-  ];
+    const postedPosts = posts.filter((p) => !p.isScheduled).length;
+
+    return {
+      totalPosts,
+      postedPosts,
+      scheduledPosts,
+      totalComments: 0, // placeholder if comments are added later
+    };
+  }, [posts]);
+
+  /* ---------------- POSTS OVER TIME ---------------- */
+
+  const postsByDate = useMemo(() => {
+    const map = {};
+
+    posts.forEach((post) => {
+      const date = post?.scheduledAt?.date;
+
+      if (!date) return;
+
+      const formatted = new Date(date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      });
+
+      map[formatted] = (map[formatted] || 0) + 1;
+    });
+
+    return Object.keys(map).map((date) => ({
+      date,
+      count: map[date],
+    }));
+  }, [posts]);
+
+  /* ---------------- PLATFORM DISTRIBUTION ---------------- */
+
+  const platformCount = useMemo(() => {
+    const platformMap = {};
+
+    posts.forEach((post) => {
+      if (!post.socialMedia) return;
+
+      post.socialMedia.forEach((platform) => {
+        platformMap[platform] = (platformMap[platform] || 0) + 1;
+      });
+    });
+
+    return Object.keys(platformMap).map((platform) => ({
+      name: platform,
+      value: platformMap[platform],
+    }));
+  }, [posts]);
+
+  /* ---------------- RECENT POSTS ---------------- */
+
+  const recentPosts = useMemo(() => {
+    return [...posts]
+      .sort(
+        (a, b) =>
+          new Date(b?.scheduledAt?.date || 0) -
+          new Date(a?.scheduledAt?.date || 0),
+      )
+      .slice(0, 5)
+      .map((post) => ({
+        _id: post._id,
+        title: post.title,
+        description: post.description,
+        platforms: post.socialMedia,
+        isPosted: !post.isScheduled,
+        isScheduled: post.isScheduled,
+      }));
+  }, [posts]);
+
+  /* ---------------- COLORS ---------------- */
 
   const COLORS_LIGHT = ["#01497C", "#2A6F97", "#468FAF", "#A9D6E5"];
   const COLORS_DARK = ["#61A5C2", "#2C7DA0", "#468FAF", "#A9D6E5"];
@@ -181,6 +211,7 @@ const Analytics = () => {
         <h2 className="text-xl font-semibold mb-4 text-[#012A4A] dark:text-white">
           Recent Posts
         </h2>
+
         <ul className="space-y-3">
           {recentPosts.map((post) => (
             <li
@@ -190,9 +221,11 @@ const Analytics = () => {
               <h3 className="font-semibold text-[#01497C] dark:text-[#61A5C2]">
                 {post.title}
               </h3>
+
               <p className="text-[#013A63] dark:text-[#CBE5F5] text-sm">
                 {post.description}
               </p>
+
               <p className="text-[#6C757D] dark:text-[#89A0B2] text-xs">
                 Platforms: {post.platforms?.join(", ") || "None"} |{" "}
                 {post.isPosted

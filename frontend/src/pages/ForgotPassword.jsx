@@ -11,8 +11,8 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
 
-  const { theme } = useThemeStore(); // ✅ SINGLE SOURCE
-  const isDark = theme === "dark"; // ✅ FIX
+  const { theme } = useThemeStore();
+  const isDark = theme === "dark";
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
@@ -40,21 +40,22 @@ const ForgotPassword = () => {
   /* ---------------- STEP 1: SEND RESET CODE ---------------- */
   const sendResetCode = async (e) => {
     e.preventDefault();
-    setError("");
-
     if (!isLoaded || !email) return;
 
-    try {
-      setLoading(true);
+    setLoading(true);
+    setError("");
 
+    try {
+      // Request reset code from Clerk
       await signIn.create({
         strategy: "reset_password_email_code",
         identifier: email,
       });
 
-      setStep(2);
+      setStep(2); // move to verification + reset step
     } catch (err) {
-      setError(err?.errors?.[0]?.message || "Failed to send reset email");
+      console.error("Send reset code error:", err);
+      setError(err?.errors?.[0]?.message || "Failed to send reset code");
     } finally {
       setLoading(false);
     }
@@ -63,14 +64,13 @@ const ForgotPassword = () => {
   /* ---------------- STEP 2: VERIFY + RESET + AUTO LOGIN ---------------- */
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    const verificationCode = code.join("");
+    if (!verificationCode || !newPassword || !isLoaded) return;
+
+    setLoading(true);
     setError("");
 
-    const verificationCode = code.join("");
-    if (!verificationCode || !newPassword) return;
-
     try {
-      setLoading(true);
-
       const result = await signIn.attemptFirstFactor({
         strategy: "reset_password_email_code",
         code: verificationCode,
@@ -78,11 +78,17 @@ const ForgotPassword = () => {
       });
 
       if (result.status === "complete") {
+        // Activate the new session
         await setActive({ session: result.createdSessionId });
         navigate("/profile");
+      } else {
+        setError("Reset incomplete, please try again");
       }
     } catch (err) {
+      console.error("Reset password error:", err);
       setError(err?.errors?.[0]?.message || "Invalid or expired code");
+      setCode(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     } finally {
       setLoading(false);
     }
@@ -91,22 +97,18 @@ const ForgotPassword = () => {
   /* ---------------- OTP INPUT HANDLING ---------------- */
   const handleCodeChange = (index, value) => {
     const newCode = [...code];
-
     if (value.length > 1) {
       value
         .slice(0, 6)
         .split("")
         .forEach((char, i) => (newCode[i] = char));
       setCode(newCode);
+      inputRefs.current[Math.min(value.length, 5)]?.focus();
       return;
     }
-
     newCode[index] = value;
     setCode(newCode);
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index, e) => {

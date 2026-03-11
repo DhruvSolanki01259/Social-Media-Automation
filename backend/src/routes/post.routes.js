@@ -1,21 +1,24 @@
 import express from "express";
+import { protectRoute } from "../middlewares/requireAuth.js";
+
 import {
   createPost,
-  getAllPosts,
+  getUserPosts,
   getPostById,
   updatePost,
   deletePost,
 } from "../controllers/post.controllers.js";
-import { verifyToken } from "../middlewares/verifyToken.js";
-import upload from "../middlewares/handleFiles.js";
 
 const router = express.Router();
 
-// All routes are protected
-router.post("/", verifyToken, upload.array("mediaFiles"), createPost);
-router.get("/", verifyToken, getAllPosts);
-router.get("/:id", verifyToken, getPostById);
-router.put("/:id", verifyToken, updatePost);
-router.delete("/:id", verifyToken, deletePost);
+router.post("/", protectRoute, createPost);
+
+router.get("/", protectRoute, getUserPosts);
+
+router.get("/:id", protectRoute, getPostById);
+
+router.put("/:id", protectRoute, updatePost);
+
+router.delete("/:id", protectRoute, deletePost);
 
 export default router;

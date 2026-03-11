@@ -1,3 +1,94 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html {
+  background-color: #020617; /* dark default */
+}
+
+html[data-theme="light"] {
+  background-color: #ffffff;
+}
+
+html[data-theme="dark"] {
+  background-color: #020617;
+}
+
+body {
+  margin: 0;
+  background-color: inherit;
+}
+
+/* ===============================
+   Spinner Theme Variables
+   =============================== */
+
+:root {
+  --spinner-bg: rgba(255, 255, 255, 0.75);
+  --spinner-ring-base: #e5e7eb;
+  --spinner-ring-accent: #2563eb;
+  --spinner-text: #475569;
+}
+
+.dark {
+  --spinner-bg: rgba(2, 6, 23, 0.75);
+  --spinner-ring-base: #1e293b;
+  --spinner-ring-accent: #38bdf8;
+  --spinner-text: #cbd5f5;
+}
+
+/* Utilities */
+.bg-spinner-bg {
+  background-color: var(--spinner-bg);
+}
+
+.text-spinner-text {
+  color: var(--spinner-text);
+}
+
+
+/* Hide scrollbar but allow scroll */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar but keep scrolling functional */
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* IE and older Edge */
+* {
+  -ms-overflow-style: none;
+}
+
+/* smooth thin scrollbar */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

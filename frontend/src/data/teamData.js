@@ -13,13 +13,13 @@ export const teamData = {
   teamMembers: [
     {
       name: "Aryan Jay Shah",
-      role: "",
+      role: "Backend Developer",
       email: "",
       phone: "",
       linkedin: "",
       github: "",
-      profileImage: "./placeholder-user.jpg",
-      description: "ABC",
+      profileImage: "./Team-Photos/aryan-nobg.png",
+      description: "Handled Backend using Python.",
     },
     {
       name: "Dhruv Kanti Solanki",
@@ -33,13 +33,13 @@ export const teamData = {
     },
     {
       name: "Ayush Mukesh Togadiya",
-      role: "",
+      role: "Backend Developer",
       email: "",
       phone: "",
       linkedin: "",
       github: "",
       profileImage: "./placeholder-user.jpg",
-      description: "ABC",
+      description: "Handled Backend using Python.",
     },
   ],
 };

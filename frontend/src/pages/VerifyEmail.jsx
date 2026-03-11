@@ -10,21 +10,21 @@ const VerifyEmail = () => {
   const navigate = useNavigate();
   const { isLoaded, signUp, setActive } = useSignUp();
 
-  const { theme } = useThemeStore(); // "light" | "dark"
-  const isDark = theme === "dark"; // ✅ FIX
+  const { theme } = useThemeStore();
+  const isDark = theme === "dark";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* -------- REDIRECT IF ALREADY VERIFIED -------- */
+  // Redirect if already verified
   useEffect(() => {
     if (!isLoaded) return;
     if (signUp?.status === "complete") navigate("/");
   }, [isLoaded, signUp, navigate]);
 
-  /* -------- OTP INPUT LOGIC -------- */
+  // Handle OTP input change
   const handleChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -50,22 +50,28 @@ const VerifyEmail = () => {
     }
   };
 
-  /* -------- VERIFY EMAIL -------- */
+  // Verify email with Clerk
   const handleVerify = async () => {
     const verificationCode = code.join("");
     if (verificationCode.length !== 6) return;
 
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
+    try {
+      // Attempt Clerk email verification
       const result = await signUp.attemptEmailAddressVerification({
         code: verificationCode,
       });
 
       if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
-        navigate("/");
+        // Activate session
+        if (result.createdSessionId) {
+          await setActive({ session: result.createdSessionId });
+        }
+        navigate("/"); // Redirect to home/dashboard
+      } else {
+        setError("Verification incomplete, please try again.");
       }
     } catch (err) {
       setError(err?.errors?.[0]?.message || "Invalid verification code");
@@ -76,12 +82,12 @@ const VerifyEmail = () => {
     }
   };
 
-  /* -------- AUTO SUBMIT -------- */
+  // Auto-submit when all digits filled
   useEffect(() => {
     if (code.every((digit) => digit !== "")) handleVerify();
   }, [code]);
 
-  /* -------- THEME COLORS (FIXED) -------- */
+  // Theme tokens
   const bgPrimary = isDark ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
   const cardBg = isDark
     ? "bg-[#102A43] border-[#1E3A5F]"

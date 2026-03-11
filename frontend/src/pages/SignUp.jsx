@@ -1,77 +1,155 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Mail, Loader, Github } from "lucide-react";
+import { Lock, Mail, User, Github } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
-import { useSignUp } from "@clerk/clerk-react";
+
+import { useSignUp, useAuth } from "@clerk/clerk-react";
+import axios from "../lib/axios";
 
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import Input from "../components/Input";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useThemeStore } from "../stores/theme.store";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { isLoaded, signUp } = useSignUp();
 
-  const { theme } = useThemeStore(); // ✅ SINGLE SOURCE
-  const isDark = theme === "dark"; // ✅ FIX
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const { getToken } = useAuth();
 
+  const { theme } = useThemeStore();
+  const isDark = theme === "dark";
+
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ---------------- EMAIL + PASSWORD SIGNUP ---------------- */
+  if (!isLoaded) return null;
+
+  /* ---------- UTIL: FULLNAME → USERNAME ---------- */
+
+  const generateUsername = (name) => {
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "") + Math.floor(Math.random() * 1000)
+    );
+  };
+
+  /* ---------------- SIGNUP ---------------- */
+
   const handleSignUp = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
+    setLoading(true);
     setError("");
 
-    if (!isLoaded) return;
-
-    if (!email || !password) {
-      setError("Please fill all required fields");
-      return;
-    }
-
     try {
-      setLoading(true);
+      // console.log("Creating Clerk user...");
 
-      const result = await signUp.create({
+      const names = fullName.trim().split(" ");
+      const firstName = names[0];
+      const lastName = names.slice(1).join(" ") || "";
+
+      await signUp.create({
+        firstName,
+        lastName,
         emailAddress: email,
         password,
       });
 
-      if (result.status === "missing_requirements") {
-        await signUp.prepareEmailAddressVerification({
-          strategy: "email_code",
-        });
+      await signUp.prepareEmailAddressVerification({
+        strategy: "email_code",
+      });
 
-        navigate("/verify-email");
+      setVerifying(true);
+    } catch (err) {
+      console.error(err);
+      setError(err?.errors?.[0]?.message || "Signup failed");
+    }
+
+    setLoading(false);
+  };
+
+  /* ---------------- VERIFY EMAIL ---------------- */
+
+  const verifyEmail = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+
+        // console.log("User verified and logged in");
+
+        const username = generateUsername(fullName);
+
+        /* ---------- CREATE USER IN MONGODB ---------- */
+
+        const token = await getToken();
+
+        await axios.post(
+          "/api/user/create",
+          {
+            username,
+            fullName,
+            email,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        navigate("/");
       }
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(err?.errors?.[0]?.message || "Signup failed");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setError(err?.errors?.[0]?.message || "Verification failed");
     }
+
+    setLoading(false);
   };
 
   /* ---------------- OAUTH ---------------- */
-  const handleOAuth = async (provider) => {
-    if (!isLoaded) return;
 
-    try {
-      await signUp.authenticateWithRedirect({
-        strategy: `oauth_${provider}`,
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/profile",
-      });
-    } catch (err) {
-      console.error("OAuth error:", err);
-    }
+  const signUpGoogle = async () => {
+    await signUp.authenticateWithRedirect({
+      strategy: "oauth_google",
+      redirectUrl: "/oauth-callback",
+      redirectUrlComplete: "/",
+    });
   };
 
-  /* ---------------- THEME COLORS ---------------- */
+  const signUpGithub = async () => {
+    await signUp.authenticateWithRedirect({
+      strategy: "oauth_github",
+      redirectUrl: "/oauth-callback",
+      redirectUrlComplete: "/",
+    });
+  };
+
+  /* ---------------- THEME ---------------- */
+
   const bgPrimary = isDark ? "bg-[#0B1E30]" : "bg-[#F8FAFC]";
   const cardBg = isDark
     ? "bg-[#102A43] border-[#1E3A5F]"
@@ -93,116 +171,120 @@ const SignUp = () => {
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className={`flex w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden ${cardBg}`}
+        className={`relative flex w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden border ${cardBg}`}
       >
+        {loading && <LoadingSpinner overlay label="Processing…" withBackdrop />}
+
         {/* LEFT */}
         <div className="w-full md:w-1/2 p-8 md:p-10 flex items-center justify-center">
           <div className="w-full max-w-lg">
-            <h2
-              className={`text-3xl font-bold text-center mb-6 ${textPrimary}`}
-            >
-              Create Your Account
-            </h2>
+            {!verifying ? (
+              <>
+                <h2
+                  className={`text-3xl font-bold text-center mb-6 ${textPrimary}`}
+                >
+                  Create Your Account
+                </h2>
 
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div id="clerk-captcha" />
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <Input
+                    icon={User}
+                    type="text"
+                    placeholder="Full Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={inputBg}
+                  />
 
-              <Input
-                icon={Mail}
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputBg}
-              />
+                  <Input
+                    icon={Mail}
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={inputBg}
+                  />
 
-              <Input
-                icon={Lock}
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputBg}
-              />
+                  <Input
+                    icon={Lock}
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={inputBg}
+                  />
 
-              <PasswordStrengthMeter password={password} darkMode={isDark} />
+                  <PasswordStrengthMeter
+                    password={password}
+                    darkMode={isDark}
+                  />
 
-              {error && (
-                <p className="text-[#E63946] text-sm text-center font-medium">
-                  {error}
+                  {error && (
+                    <p className="text-[#E63946] text-sm text-center font-medium">
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full py-3 rounded-lg font-semibold text-white ${buttonBg}`}
+                  >
+                    Sign Up
+                  </button>
+                </form>
+
+                <div className="flex justify-center gap-4 mt-6">
+                  <button
+                    onClick={signUpGoogle}
+                    className="flex items-center gap-2 px-5 py-2.5 border rounded-lg"
+                  >
+                    <FcGoogle className="w-5 h-5" />
+                    Google
+                  </button>
+
+                  <button
+                    onClick={signUpGithub}
+                    className="flex items-center gap-2 px-5 py-2.5 border rounded-lg"
+                  >
+                    <Github className="w-5 h-5" />
+                    GitHub
+                  </button>
+                </div>
+
+                <p className={`mt-6 text-center text-sm ${textSecondary}`}>
+                  Already have an account?{" "}
+                  <Link to="/login" className="font-medium hover:underline">
+                    Login
+                  </Link>
                 </p>
-              )}
+              </>
+            ) : (
+              <>
+                <h2
+                  className={`text-2xl font-bold text-center mb-6 ${textPrimary}`}
+                >
+                  Verify Your Email
+                </h2>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                type="submit"
-                disabled={loading}
-                className={`
-                  w-full py-3 rounded-lg font-semibold
-                  transition-colors duration-200
-                  ${buttonBg}
-                  text-white
-                  hover:text-white
-                  dark:text-white
-                  dark:hover:text-white
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                `}
-              >
-                {loading ? (
-                  <Loader className="w-5 h-5 animate-spin mx-auto text-white" />
-                ) : (
-                  "Sign Up"
-                )}
-              </motion.button>
-            </form>
+                <form onSubmit={verifyEmail} className="space-y-4">
+                  <Input
+                    type="text"
+                    placeholder="Enter verification code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className={inputBg}
+                  />
 
-            {/* DIVIDER */}
-            <div className="flex items-center my-6">
-              <hr
-                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
-              />
-              <span
-                className={`mx-3 text-sm ${isDark ? "text-[#61A5C2]" : "text-[#6C757D]"}`}
-              >
-                or continue with
-              </span>
-              <hr
-                className={`flex-grow ${isDark ? "border-[#2C7DA0]" : "border-[#E2E8F0]"}`}
-              />
-            </div>
-
-            {/* OAUTH */}
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => handleOAuth("google")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
-                  isDark
-                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
-                    : "hover:bg-[#F1F5F9]"
-                }`}
-              >
-                <FcGoogle className="w-5 h-5" /> Google
-              </button>
-
-              <button
-                onClick={() => handleOAuth("github")}
-                className={`flex items-center gap-2 px-5 py-2.5 border rounded-lg ${
-                  isDark
-                    ? "border-[#2C7DA0] hover:bg-[#1E3A5F]"
-                    : "hover:bg-[#F1F5F9]"
-                }`}
-              >
-                <Github className="w-5 h-5" /> GitHub
-              </button>
-            </div>
-
-            <p className={`mt-6 text-center text-sm ${textSecondary}`}>
-              Already have an account?{" "}
-              <Link to="/login" className="font-medium hover:underline">
-                Login
-              </Link>
-            </p>
+                  <button
+                    type="submit"
+                    className={`w-full py-3 rounded-lg font-semibold text-white ${buttonBg}`}
+                  >
+                    Verify Email
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
 
@@ -211,7 +293,7 @@ const SignUp = () => {
           className={`hidden md:flex md:w-1/2 border-l p-10 items-center justify-center flex-col ${
             isDark
               ? "bg-[#1E3A5F] border-[#2C7DA0]"
-              : "bg-[#F1F5F9] border-l-[#E2E8F0]"
+              : "bg-[#F1F5F9] border-[#E2E8F0]"
           }`}
         >
           <img src="/signup-image.png" className="w-96 mb-6" />

@@ -2,29 +2,33 @@ import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    clerkUserId: {
+      type: String,
       required: true,
+      index: true,
     },
+
     title: {
       type: String,
       required: true,
       trim: true,
       maxlength: 100,
     },
+
     description: {
       type: String,
+      required: true,
       trim: true,
       maxlength: 1000,
-      required: true,
     },
+
     tags: [
       {
         type: String,
         trim: true,
       },
     ],
+
     socialMedia: {
       type: [String],
       enum: ["facebook", "instagram", "twitter", "linkedin"],
@@ -34,6 +38,7 @@ const postSchema = new mongoose.Schema(
         message: "At least one social media platform must be selected",
       },
     },
+
     category: {
       type: String,
       enum: [
@@ -65,30 +70,32 @@ const postSchema = new mongoose.Schema(
       ],
       default: "Other",
     },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-    time: {
-      type: String, // e.g., "14:30"
-      default: "",
-    },
+
     isScheduled: {
       type: Boolean,
       default: false,
     },
+
     scheduledAt: {
-      type: Date,
-      default: null,
+      type: {
+        type: String,
+        enum: ["auto", "manual"],
+        default: "auto",
+      },
+      date: {
+        type: Date,
+        default: null,
+      },
+      time: {
+        type: String,
+        default: null,
+      },
     },
-    isPosted: {
-      type: Boolean,
-      default: false,
-    },
+
     mediaUrls: [
       {
         type: String,
-        default: "",
+        trim: true,
       },
     ],
   },
@@ -96,4 +103,5 @@ const postSchema = new mongoose.Schema(
 );
 
 const Post = mongoose.model("Post", postSchema);
+
 export default Post;
